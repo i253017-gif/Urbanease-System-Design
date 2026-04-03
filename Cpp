@@ -1,0 +1,159 @@
+#include"Header.h"
+#include<iostream>
+#include<string>
+using namespace std;
+
+//==========Person Hierchy=============
+Person::Person(string n)
+{
+	name = n;
+}
+string Person::getName() const
+{
+	return name;
+}
+
+Employee::Employee(string m, int n)
+	: Person(m)
+{
+	ID = n;;
+}
+int Employee:: getID() const
+{
+	return ID;
+}
+Manager::Manager(string n,int id, int b)
+	:Employee(n ,id)
+{
+	bonus = b;
+}
+int Manager::getBonus() const
+{
+	return bonus;
+}
+
+//================COMPOSITION=================
+Coordinates::Coordinates(double lon, double lat)
+{
+	longitude=lon;
+	latitude = lat;
+}
+double Coordinates::getLongitude() const
+{
+	return longitude;
+}
+double Coordinates::getLatitude() const
+{
+	return latitude;
+}
+
+Analytics::Analytics(int s)
+{
+	size = s;
+	data = new double[size];
+	for (int i = 0; i < size; i++)
+	{
+		data[i] = 0.0;   
+	}
+}
+
+Analytics::Analytics(const Analytics& other) {
+	size = other.size;
+	data = new double[size];
+	for (int i = 0; i < size; i++)
+		data[i] = other.data[i];
+}
+
+Analytics::~Analytics() {
+	delete[] data;
+}
+
+Analytics& Analytics::operator=(const Analytics& other) {
+	if (this != &other) {
+		delete[] data;
+		size = other.size;
+		data = new double[size];
+		for (int i = 0; i < size; i++)
+			data[i] = other.data[i];
+	}
+	return *this;
+}
+
+double& Analytics::operator[](int index) {
+	return data[index];
+}
+
+int Analytics::getSize() const {
+	return size;
+}
+double Analytics::getTotal() const
+{
+	double total = 0.0;
+	for (int i = 0; i < size; i++)
+	{
+		total += data[i];
+	}
+	return total;
+}
+
+//===========STORE===============
+Store::Store(Coordinates location, string n, int ID, int count)
+	:location(location),			 //since its composed, we initialise as its not member
+	sales(24),						//analytics constructors called
+	costs(24),
+	customers(24)
+{
+	storeName = n;
+	storeID = ID;
+	staffCount = count;
+	staff = new Employee[staffCount];
+}
+Store::Store(const Store& other) //deep copy lessgo
+{
+	storeName = other.storeName;
+	storeID = other.storeID;
+	location = other.location;   
+	sales = other.sales;       //analytics has copy constructor so this will work fine
+	costs = other.costs;
+	customers = other.customers;
+	manager = other.manager;   //manager is an employee so this will work fine too
+	staffCount = other.staffCount;
+	staff = new Employee[staffCount];
+	for (int i = 0; i < staffCount; i++)
+	{
+		staff[i] = other.staff[i];
+	}
+}
+Store& Store ::operator=(const Store& other)
+{
+	if (this != &other) {							//this when same class member
+		storeName = other.storeName;				//other when different class
+		storeID = other.storeID;
+		location = other.location;
+		sales = other.sales;
+		costs = other.costs;
+		customers = other.customers;
+		manager = other.manager;
+		staffCount = other.staffCount;
+		delete[] staff;  //delete old staff array
+		staff = new Employee[staffCount];  //create new staff array
+		for (int i = 0; i < staffCount; i++)
+			staff[i] = other.staff[i];  //copy staff members
+	}
+	return *this;
+}
+bool Store::operator==(const Store& other) const
+{
+	if (storeID == other.storeID)					//using store ID because it is unique
+		return true;
+	else
+		return false;
+}
+double Store::CalculateProfit() const
+{	
+	return sales.getTotal() - costs.getTotal();			//can go into loss
+}
+Store::~Store()
+{
+	delete[] staff;
+}
