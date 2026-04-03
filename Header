@@ -1,0 +1,95 @@
+#pragma once
+#include<iostream>
+#include<string>
+using namespace std;
+
+
+//===========PERSON HIERCHY====================
+class Person          
+{
+private:
+	string name;
+
+public:
+	Person(string name);
+	string getName() const;    //no setName bcs we dont need to change like the employees and stuff.
+						 //once name is declared it can stay the same
+};
+class Employee : public Person
+{
+private:
+	int ID;
+
+public:
+	Employee(string name, int ID);
+	int getID() const;    //making it const so it becomes read only
+
+};
+class Manager : public Employee
+{
+private:
+	int bonus;   //added this so like I can show the hierchy is set up properly and that manager
+				//has something special
+
+public:
+	Manager(string name, int ID, int bonus);
+	int getBonus() const;			//getters needed for cross class usage
+};
+
+
+//===========CLASSES FOR COMPOSITION====================
+class Coordinates
+{
+private:
+	double longitude, latitude;
+public:
+	Coordinates(double longitude, double latitude);
+	double getLongitude() const;
+	double getLatitude() const;
+};
+
+class Analytic          //this class is defining the behaviour of one array
+{
+private:
+	double* data;
+	int size;
+
+public:
+	Analytic(int size); //change this value in the constructor to add or remove months
+	int getSize() const;     //for getting size to use in loops
+	~Analytic();        //bcs dynamic allocation and shyt
+	Analytic(const Analytic& other);   //deep copying array. Will use it later to set array=0 to
+	                                  //avoid garbage values
+
+	double& operator[](int index);   //overloading operator to use it like an array.
+									 //we use & to make it both read and write
+
+};
+
+class Store
+{
+private:
+	string storeName;
+	int storeID;
+	Coordinates location;  
+
+	Analytic sales;
+	Analytic costs;
+	Analytic customers;
+
+	Manager manager;
+	Employee* staff;
+	int staffCount;
+
+public:
+	Store(string storeName, int storeID, Coordinates location, int staffCount);
+	Store(const Store& other);						//deep copies store
+	~Store();
+
+	Store& operator=(const Store& other);			//copies values across stores
+
+	bool operator==(const Store& other) const;		//comparison b/w stores
+
+	double getTotal() const;    //profit calculations
+	double CalculateProfit() const;
+};
