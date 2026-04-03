@@ -11,7 +11,7 @@ private:
 	string name;
 
 public:
-	Person(string name);
+	Person(string name=" ");
 	string getName() const;    //no setName bcs we dont need to change like the employees and stuff.
 						 //once name is declared it can stay the same
 };
@@ -21,7 +21,7 @@ private:
 	int ID;
 
 public:
-	Employee(string name, int ID);
+	Employee(string name=" ", int ID=0);
 	int getID() const;    //making it const so it becomes read only
 
 };
@@ -32,7 +32,7 @@ private:
 				//has something special
 
 public:
-	Manager(string name, int ID, int bonus);
+	Manager(string name=" ", int ID=0, int bonus=0);
 	int getBonus() const;			//getters needed for cross class usage
 };
 
@@ -43,27 +43,28 @@ class Coordinates
 private:
 	double longitude, latitude;
 public:
-	Coordinates(double longitude, double latitude);
+	Coordinates(double longitude=0.0, double latitude=0.0);
 	double getLongitude() const;
 	double getLatitude() const;
 };
 
-class Analytic          //this class is defining the behaviour of one array
+class Analytics          //this class is defining the behaviour of one array
 {
 private:
 	double* data;
 	int size;
 
 public:
-	Analytic(int size); //change this value in the constructor to add or remove months
+	Analytics(int size=24); //change this value in the constructor to add or remove months
 	int getSize() const;     //for getting size to use in loops
-	~Analytic();        //bcs dynamic allocation and shyt
-	Analytic(const Analytic& other);   //deep copying array. Will use it later to set array=0 to
+	~Analytics();        //bcs dynamic allocation and shyt
+	Analytics(const Analytics& other);   //deep copying array. Will use it later to set array=0 to
 	                                  //avoid garbage values
 
 	double& operator[](int index);   //overloading operator to use it like an array.
 									 //we use & to make it both read and write
-
+	
+	double getTotal() const;    //profit calculations
 };
 
 class Store
@@ -73,16 +74,16 @@ private:
 	int storeID;
 	Coordinates location;  
 
-	Analytic sales;
-	Analytic costs;
-	Analytic customers;
+	Analytics sales;
+	Analytics costs;
+	Analytics customers;
 
 	Manager manager;
 	Employee* staff;
 	int staffCount;
 
-public:
-	Store(string storeName, int storeID, Coordinates location, int staffCount);
+public:										 //location calling the default	constructor of Coordinates											
+	Store( Coordinates location=Coordinates(), string name = " ", int ID = 0, int staffCount = 0);  
 	Store(const Store& other);						//deep copies store
 	~Store();
 
@@ -90,6 +91,5 @@ public:
 
 	bool operator==(const Store& other) const;		//comparison b/w stores
 
-	double getTotal() const;    //profit calculations
 	double CalculateProfit() const;
 };
