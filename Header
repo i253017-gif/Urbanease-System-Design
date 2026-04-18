@@ -1,95 +1,251 @@
-#pragma once
+#ifndef HEADER_H
+#define HEADER_H
+
 #include<iostream>
 #include<string>
+#include<fstream>
+#include<cmath>
+#include<cstdlib>
+#include<iomanip>
+#include<sstream>
+
 using namespace std;
 
-
-//===========PERSON HIERCHY====================
-class Person          
-{
-private:
-	string name;
+//Person hierarchy
+class Person {
+protected:
+    string name;
 
 public:
-	Person(string name=" ");
-	string getName() const;    //no setName bcs we dont need to change like the employees and stuff.
-						 //once name is declared it can stay the same
+    Person(string n = " ");
+    virtual ~Person();
+    string getName() const;
 };
-class Employee : public Person
-{
-private:
-	int ID;
+
+class Employee : public Person {
+protected:
+    int ID;
 
 public:
-	Employee(string name=" ", int ID=0);
-	int getID() const;    //making it const so it becomes read only
-
+    Employee(string n = " ", int id = 0);
+    virtual ~Employee();
+    int getID() const;
 };
-class Manager : public Employee
-{
+
+class Manager : public Employee {
 private:
-	int bonus;   //added this so like I can show the hierchy is set up properly and that manager
-				//has something special
+    int bonus;
 
 public:
-	Manager(string name=" ", int ID=0, int bonus=0);
-	int getBonus() const;			//getters needed for cross class usage
+    Manager(string n = " ", int id = 0, int b = 0);
+    ~Manager();
+    int getBonus() const;
+    void setBonus(int b);
 };
 
-
-//===========CLASSES FOR COMPOSITION====================
-class Coordinates
-{
+//composition
+class Coordinates {
 private:
-	double longitude, latitude;
-public:
-	Coordinates(double longitude=0.0, double latitude=0.0);
-	double getLongitude() const;
-	double getLatitude() const;
-};
-
-class Analytics          //this class is defining the behaviour of one array
-{
-private:
-	double* data;
-	int size;
+    double longitude;
+    double latitude;
 
 public:
-	Analytics(int size=24); //change this value in the constructor to add or remove months
-	int getSize() const;     //for getting size to use in loops
-	~Analytics();        //bcs dynamic allocation and shyt
-	Analytics(const Analytics& other);   //deep copying array. Will use it later to set array=0 to
-	                                  //avoid garbage values
-
-	double& operator[](int index);   //overloading operator to use it like an array.
-									 //we use & to make it both read and write
-	
-	double getTotal() const;    //profit calculations
+    Coordinates(double lon = 0.0, double lat = 0.0);
+    double getLongitude() const;
+    double getLatitude() const;
+    double distanceTo(const Coordinates& other) const;
 };
 
-class Store
-{
+class Analytics {
 private:
-	string storeName;
-	int storeID;
-	Coordinates location;  
+    double* data;
+    int size;
+    double compositeScore;
 
-	Analytics sales;
-	Analytics costs;
-	Analytics customers;
+public:
+    Analytics(int s = 24);
+    ~Analytics();
+    Analytics(const Analytics& other);
+    Analytics& operator=(const Analytics& other);
 
-	Manager manager;
-	Employee* staff;
-	int staffCount;
+    double operator[](int index) const;
+    double& operator[](int index);
+    int getSize() const;
+    double getTotal() const;
 
-public:										 //location calling the default	constructor of Coordinates											
-	Store( Coordinates location=Coordinates(), string name = " ", int ID = 0, int staffCount = 0);  
-	Store(const Store& other);						//deep copies store
-	~Store();
+    double getAverage() const;
+    double getGrowthRate() const;
+    void calculateCompositeScore();
+    double getCompositeScore() const;
 
-	Store& operator=(const Store& other);			//copies values across stores
-
-	bool operator==(const Store& other) const;		//comparison b/w stores
-
-	double CalculateProfit() const;
+    bool operator<(const Analytics& other) const;
+    bool operator>(const Analytics& other) const;
+    Analytics operator+(const Analytics& other) const;
 };
+
+class Forecast {
+private:
+    double predictedSales;
+    double confidenceLevel;
+    bool warningFlag;
+    int monthsAhead;
+
+public:
+    Forecast();
+    ~Forecast();
+    void generateForecast(const Analytics& sales);
+
+    double getPredictedSales() const;
+    double getConfidenceLevel() const;
+    bool hasWarning() const;
+    int getMonthsAhead() const;
+
+    Forecast operator+(const Forecast& other) const;
+    Forecast& operator++();
+    Forecast operator++(int);
+};
+
+//stores
+class Store {
+private:
+    string storeName;
+    int storeID;
+    Coordinates location;
+
+    Analytics sales;
+    Analytics costs;
+    Analytics customers;
+    Forecast forecast;
+
+    Manager manager;
+    Employee* staff;
+    int staffCount;
+
+public:
+    Store(Coordinates loc = Coordinates(), string name = " ", int id = 0, int count = 0);
+    Store(const Store& other);
+    ~Store();
+
+    Store& operator=(const Store& other);
+    bool operator==(const Store& other) const;
+
+    string getStoreName() const;
+    int getStoreID() const;
+    Coordinates getLocation() const;
+    Analytics getSales() const;
+    Analytics getCosts() const;
+    Analytics getCustomers() const;
+    Forecast getForecast() const;
+    Manager getManager() const;
+    Employee* getStaff() const;
+    int getStaffCount() const;
+
+    void setStoreName(string name);
+    void setLocation(Coordinates loc);
+    void setManager(Manager m);
+    void addEmployee(Employee e);
+
+    void setSalesData(int month, double val);
+    void setCostData(int month, double val);
+    void setCustomerData(int month, int val);
+
+    void generateRandomData();
+    void updateForecast();
+
+    double CalculateProfit() const;
+
+    void saveToFile(ofstream& file) const;
+    void loadFromFile(ifstream& file);
+
+    friend ostream& operator<<(ostream& os, const Store& s);
+};
+
+//centeroids
+class Centroid {
+private:
+    double latitude;
+    double longitude;
+    double performanceScore;
+    int clusterID;
+
+public:
+    Centroid(double lat = 0.0, double lon = 0.0, double score = 0.0, int id = 0);
+    ~Centroid();
+
+    double getLatitude() const;
+    double getLongitude() const;
+    double getScore() const;
+    int getClusterID() const;
+
+    void setFeatures(double lat, double lon, double score);
+    double distanceToStore(const Store& store) const;
+    bool operator==(const Centroid& other) const;
+};
+
+//clustors
+class Cluster {
+private:
+    Store** stores;
+    int storeCount;
+    int capacity;
+    int clusterID;
+    Centroid centroid;
+
+public:
+    Cluster(int id = 0);
+    Cluster(const Cluster& other);
+    ~Cluster();
+
+    Cluster& operator=(const Cluster& other);
+
+    void addStore(Store* store);
+    Store* getStore(int index) const;
+    int getStoreCount() const;
+    int getClusterID() const;
+
+    Centroid getCentroid() const;
+
+    void updateCentroid();
+    double getTotalRevenue() const;
+    double getTotalProfit() const;
+
+    Cluster operator+(const Cluster& other);
+    friend ostream& operator<<(ostream& os, const Cluster& c);
+};
+
+//report
+class Report {
+private:
+    Store** topStores;
+    Store** bottomStores;
+    int topCount;
+    int bottomCount;
+
+public:
+    Report();
+    ~Report();
+
+    void generateReport(Store** storeArray, int storeCount);
+
+    Store* getTopStore(int index) const;
+    Store* getBottomStore(int index) const;
+    int getTopCount() const;
+    int getBottomCount() const;
+
+    friend ostream& operator<<(ostream& os, const Report& r);
+};
+
+//helper functions
+double generateRandomDouble(double min, double max);
+int generateRandomInt(int min, int max);
+string generateRandomStoreName();
+string generateRandomManagerName();
+
+Store* loadAllStores(const string& filename, int& storeCount);
+void saveAllStores(Store** storeArray, int storeCount, const string& filename);
+Cluster* performClustering(Store** storeArray, int storeCount, int k);
+int displayStartupMenu();
+void displayClusterSummary(Cluster* clusters, int k);
+void displayStoreDetails(Store* store);
+
+#endif
