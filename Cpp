@@ -1,159 +1,745 @@
 #include"Header.h"
-#include<iostream>
-#include<string>
-using namespace std;
 
-//==========Person Hierchy=============
-Person::Person(string n)
-{
-	name = n;
-}
-string Person::getName() const
-{
-	return name;
-}
+//Person Hierarchy
+Person::Person(string n) : name(n) {}
+Person::~Person() {}
+string Person::getName() const { return name; }
 
-Employee::Employee(string m, int n)
-	: Person(m)
-{
-	ID = n;;
-}
-int Employee:: getID() const
-{
-	return ID;
-}
-Manager::Manager(string n,int id, int b)
-	:Employee(n ,id)
-{
-	bonus = b;
-}
-int Manager::getBonus() const
-{
-	return bonus;
+Employee::Employee(string n, int id) : Person(n), ID(id) {}
+Employee::~Employee() {}
+int Employee::getID() const { return ID; }
+
+Manager::Manager(string n, int id, int b) : Employee(n, id), bonus(b) {}
+Manager::~Manager() {}
+int Manager::getBonus() const { return bonus; }
+void Manager::setBonus(int b) { bonus = b; }
+
+//Composition
+Coordinates::Coordinates(double lon, double lat) : longitude(lon), latitude(lat) {}
+double Coordinates::getLongitude() const { return longitude; }
+double Coordinates::getLatitude() const { return latitude; }
+
+double Coordinates::distanceTo(const Coordinates& other) const {
+    double dLat = latitude - other.latitude;
+    double dLon = longitude - other.longitude;
+    return sqrt(dLat * dLat + dLon * dLon);
 }
 
-//================COMPOSITION=================
-Coordinates::Coordinates(double lon, double lat)
-{
-	longitude=lon;
-	latitude = lat;
-}
-double Coordinates::getLongitude() const
-{
-	return longitude;
-}
-double Coordinates::getLatitude() const
-{
-	return latitude;
+//Analytics
+Analytics::Analytics(int s) : size(s), compositeScore(0) {
+    data = new double[size];
+    for (int i = 0; i < size; i++) {
+        data[i] = 0.0;
+    }
 }
 
-Analytics::Analytics(int s)
-{
-	size = s;
-	data = new double[size];
-	for (int i = 0; i < size; i++)
-	{
-		data[i] = 0.0;   
-	}
-}
-
-Analytics::Analytics(const Analytics& other) {
-	size = other.size;
-	data = new double[size];
-	for (int i = 0; i < size; i++)
-		data[i] = other.data[i];
+Analytics::Analytics(const Analytics& other) : size(other.size), compositeScore(other.compositeScore) {
+    data = new double[size];
+    for (int i = 0; i < size; i++) {
+        data[i] = other.data[i];
+    }
 }
 
 Analytics::~Analytics() {
-	delete[] data;
+    delete[] data;
 }
 
 Analytics& Analytics::operator=(const Analytics& other) {
-	if (this != &other) {
-		delete[] data;
-		size = other.size;
-		data = new double[size];
-		for (int i = 0; i < size; i++)
-			data[i] = other.data[i];
-	}
-	return *this;
+    if (this != &other) {
+        delete[] data;
+        size = other.size;
+        compositeScore = other.compositeScore;
+        data = new double[size];
+        for (int i = 0; i < size; i++) {
+            data[i] = other.data[i];
+        }
+    }
+    return *this;
+}
+
+double Analytics::operator[](int index) const { //kept messing up so needed another with &
+    if (index >= 0 && index < size) {
+        return data[index];
+    }
+    return 0;
 }
 
 double& Analytics::operator[](int index) {
-	return data[index];
+    return data[index];
 }
 
-int Analytics::getSize() const {
-	return size;
-}
-double Analytics::getTotal() const
-{
-	double total = 0.0;
-	for (int i = 0; i < size; i++)
-	{
-		total += data[i];
-	}
-	return total;
+int Analytics::getSize() const { return size; }
+
+double Analytics::getTotal() const {
+    double total = 0.0;
+    for (int i = 0; i < size; i++) {
+        total += data[i];
+    }
+    return total;
 }
 
-//===========STORE===============
-Store::Store(Coordinates location, string n, int ID, int count)
-	:location(location),			 //since its composed, we initialise as its not member
-	sales(24),						//analytics constructors called
-	costs(24),
-	customers(24)
-{
-	storeName = n;
-	storeID = ID;
-	staffCount = count;
-	staff = new Employee[staffCount];
+double Analytics::getAverage() const {
+    if (size == 0) return 0;
+    return getTotal() / size;
 }
-Store::Store(const Store& other) //deep copy lessgo
-{
-	storeName = other.storeName;
-	storeID = other.storeID;
-	location = other.location;   
-	sales = other.sales;       //analytics has copy constructor so this will work fine
-	costs = other.costs;
-	customers = other.customers;
-	manager = other.manager;   //manager is an employee so this will work fine too
-	staffCount = other.staffCount;
-	staff = new Employee[staffCount];
-	for (int i = 0; i < staffCount; i++)
-	{
-		staff[i] = other.staff[i];
-	}
+
+double Analytics::getGrowthRate() const {
+    if (data[0] == 0) return 0;
+    return ((data[size - 1] - data[0]) / data[0]) * 100;
 }
-Store& Store ::operator=(const Store& other)
-{
-	if (this != &other) {							//this when same class member
-		storeName = other.storeName;				//other when different class
-		storeID = other.storeID;
-		location = other.location;
-		sales = other.sales;
-		costs = other.costs;
-		customers = other.customers;
-		manager = other.manager;
-		staffCount = other.staffCount;
-		delete[] staff;  //delete old staff array
-		staff = new Employee[staffCount];  //create new staff array
-		for (int i = 0; i < staffCount; i++)
-			staff[i] = other.staff[i];  //copy staff members
-	}
-	return *this;
+
+void Analytics::calculateCompositeScore() {
+    double total = getTotal();
+    double growth = getGrowthRate();
+    compositeScore = (total * 0.7) + (growth * 0.3);
 }
-bool Store::operator==(const Store& other) const
-{
-	if (storeID == other.storeID)					//using store ID because it is unique
-		return true;
-	else
-		return false;
+
+double Analytics::getCompositeScore() const { return compositeScore; }
+
+bool Analytics::operator<(const Analytics& other) const {
+    return compositeScore < other.compositeScore;
 }
-double Store::CalculateProfit() const
-{	
-	return sales.getTotal() - costs.getTotal();			//can go into loss
+
+bool Analytics::operator>(const Analytics& other) const {
+    return compositeScore > other.compositeScore;
 }
-Store::~Store()
-{
-	delete[] staff;
+
+Analytics Analytics::operator+(const Analytics& other) const {
+    Analytics result(size);
+    for (int i = 0; i < size; i++) {
+        result.data[i] = data[i] + other.data[i];
+    }
+    result.calculateCompositeScore();
+    return result;
 }
+
+//Forecast
+Forecast::Forecast() : predictedSales(0), confidenceLevel(0), warningFlag(false), monthsAhead(1) {}
+Forecast::~Forecast() {}
+
+void Forecast::generateForecast(const Analytics& sales) {
+    double recentAvg = 0;
+    for (int i = 18; i < 24; i++) {
+        recentAvg += sales[i];
+    }
+    recentAvg /= 6.0;
+
+    double oldAvg = 0;
+    for (int i = 12; i < 18; i++) {
+        oldAvg += sales[i];
+    }
+    oldAvg /= 6.0;
+
+    if (oldAvg == 0) oldAvg = 1;
+    double trend = (recentAvg - oldAvg) / oldAvg;
+    predictedSales = recentAvg * (1 + trend * 0.5);
+
+    double variance = 0;
+    for (int i = 18; i < 24; i++) {
+        variance += (sales[i] - recentAvg) * (sales[i] - recentAvg);
+    }
+    variance /= 6.0;
+    double stdDev = sqrt(variance);
+
+    if (recentAvg == 0) {
+        confidenceLevel = 0;
+    }
+    else {
+        confidenceLevel = max(0.0, 100.0 - (stdDev / recentAvg * 100.0));
+    }
+    warningFlag = (trend < -0.05);
+}
+
+double Forecast::getPredictedSales() const { return predictedSales; }
+double Forecast::getConfidenceLevel() const { return confidenceLevel; }
+bool Forecast::hasWarning() const { return warningFlag; }
+int Forecast::getMonthsAhead() const { return monthsAhead; }
+
+Forecast Forecast::operator+(const Forecast& other) const {
+    Forecast result;
+    result.predictedSales = predictedSales + other.predictedSales;
+    result.confidenceLevel = (confidenceLevel + other.confidenceLevel) / 2.0;
+    result.warningFlag = warningFlag || other.warningFlag;
+    return result;
+}
+
+Forecast& Forecast::operator++() {
+    monthsAhead++;
+    predictedSales *= 1.02;
+    return *this;
+}
+
+Forecast Forecast::operator++(int) {
+    Forecast temp = *this;
+    monthsAhead++;
+    predictedSales *= 1.02;
+    return temp;
+}
+
+//FINALLY STORE
+Store::Store(Coordinates loc, string name, int id, int count)
+    : location(loc), storeName(name), storeID(id), staffCount(count),
+    sales(24), costs(24), customers(24) {
+    if (count > 0) {
+        staff = new Employee[count];
+    }
+    else {
+        staff = nullptr;
+    }
+}
+
+Store::Store(const Store& other)
+    : location(other.location), storeName(other.storeName), storeID(other.storeID),
+    staffCount(other.staffCount), sales(other.sales), costs(other.costs),
+    customers(other.customers), forecast(other.forecast), manager(other.manager) {
+    if (staffCount > 0) {
+        staff = new Employee[staffCount];
+        for (int i = 0; i < staffCount; i++) {
+            staff[i] = other.staff[i];
+        }
+    }
+    else {
+        staff = nullptr;
+    }
+}
+
+Store::~Store() {
+    if (staff != nullptr) {
+        delete[] staff;
+        staff = nullptr;
+    }
+}
+
+Store& Store::operator=(const Store& other) {
+    if (this != &other) {
+        if (staff != nullptr) {
+            delete[] staff;
+            staff = nullptr;
+        }
+
+        location = other.location;
+        storeName = other.storeName;
+        storeID = other.storeID;
+        staffCount = other.staffCount;
+        sales = other.sales;
+        costs = other.costs;
+        customers = other.customers;
+        forecast = other.forecast;
+        manager = other.manager;
+
+        if (staffCount > 0) {
+            staff = new Employee[staffCount];
+            for (int i = 0; i < staffCount; i++) {
+                staff[i] = other.staff[i];
+            }
+        }
+        else {
+            staff = nullptr;
+        }
+    }
+    return *this;
+}
+
+bool Store::operator==(const Store& other) const {
+    return storeID == other.storeID;
+}
+
+//so manyyy omg
+string Store::getStoreName() const { return storeName; }
+int Store::getStoreID() const { return storeID; }
+Coordinates Store::getLocation() const { return location; }
+Analytics Store::getSales() const { return sales; }
+Analytics Store::getCosts() const { return costs; }
+Analytics Store::getCustomers() const { return customers; }
+Forecast Store::getForecast() const { return forecast; }
+Manager Store::getManager() const { return manager; }
+Employee* Store::getStaff() const { return staff; }
+int Store::getStaffCount() const { return staffCount; }
+
+void Store::setStoreName(string name) { storeName = name; }
+void Store::setLocation(Coordinates loc) { location = loc; }
+void Store::setManager(Manager m) { manager = m; }
+
+void Store::addEmployee(Employee e) {
+    if (staffCount == 0) {
+        staff = new Employee[1];
+        staff[0] = e;
+        staffCount = 1;
+    }
+    else {
+        Employee* newStaff = new Employee[staffCount + 1];
+        for (int i = 0; i < staffCount; i++) {
+            newStaff[i] = staff[i];
+        }
+        newStaff[staffCount] = e;
+        delete[] staff;
+        staff = newStaff;
+        staffCount++;
+    }
+}
+
+void Store::setSalesData(int month, double val) {
+    if (month >= 0 && month < 24) sales[month] = val;
+}
+
+void Store::setCostData(int month, double val) {
+    if (month >= 0 && month < 24) costs[month] = val;
+}
+
+void Store::setCustomerData(int month, int val) {
+    if (month >= 0 && month < 24) customers[month] = val;
+}
+
+void Store::generateRandomData() {
+    for (int i = 0; i < 24; i++) {
+        double baseSales = generateRandomDouble(50000, 200000);
+        double seasonality = 1.0 + 0.3 * sin((i * 3.14159) / 6.0);
+        double s = baseSales * seasonality;
+
+        sales[i] = s;
+        costs[i] = s * generateRandomDouble(0.6, 0.7);
+        customers[i] = generateRandomInt(500, 2000);
+    }
+
+    sales.calculateCompositeScore();
+    updateForecast();
+}
+
+void Store::updateForecast() {
+    forecast.generateForecast(sales);
+}
+
+double Store::CalculateProfit() const {
+    return sales.getTotal() - costs.getTotal();
+}
+
+void Store::saveToFile(ofstream& file) const {
+    file << storeName << "|" << storeID << "|"
+        << location.getLongitude() << "|" << location.getLatitude() << "\n";
+
+    for (int i = 0; i < 24; i++) {
+        file << sales[i] << " ";
+    }
+    file << "\n";
+}
+
+void Store::loadFromFile(ifstream& file) {
+    string line;
+    getline(file, line);
+
+    size_t pos = 0;
+    pos = line.find('|');
+    storeName = line.substr(0, pos);
+    line.erase(0, pos + 1);
+
+    pos = line.find('|');
+    storeID = stoi(line.substr(0, pos));
+    line.erase(0, pos + 1);
+
+    double lon, lat;
+    pos = line.find('|');
+    lon = stod(line.substr(0, pos));
+    line.erase(0, pos + 1);
+    lat = stod(line);
+
+    location = Coordinates(lon, lat);
+
+    getline(file, line);
+    istringstream iss(line);
+    double val;
+    for (int i = 0; i < 24; i++) {
+        iss >> val;
+        sales[i] = val;
+    }
+
+    sales.calculateCompositeScore();
+}
+
+ostream& operator<<(ostream& os, const Store& s) {
+    os << "\n=== " << s.storeName << " (ID: " << s.storeID << ") ===\n";
+    os << "Sales: " << fixed << setprecision(2) << s.sales.getTotal() << "\n";
+    os << "Profit: " << s.CalculateProfit() << "\n";
+    os << "Score: " << s.sales.getCompositeScore() << "\n";
+    return os;
+}
+
+//Centeroids
+Centroid::Centroid(double lat, double lon, double score, int id)
+    : latitude(lat), longitude(lon), performanceScore(score), clusterID(id) {
+}
+
+Centroid::~Centroid() {}
+
+double Centroid::getLatitude() const { return latitude; }
+double Centroid::getLongitude() const { return longitude; }
+double Centroid::getScore() const { return performanceScore; }
+int Centroid::getClusterID() const { return clusterID; }
+
+void Centroid::setFeatures(double lat, double lon, double score) {
+    latitude = lat;
+    longitude = lon;
+    performanceScore = score;
+}
+
+double Centroid::distanceToStore(const Store& store) const {
+    Coordinates loc = store.getLocation();
+    double dLat = latitude - loc.getLatitude();
+    double dLon = longitude - loc.getLongitude();
+    return sqrt(dLat * dLat + dLon * dLon);
+}
+
+bool Centroid::operator==(const Centroid& other) const {
+    return abs(latitude - other.latitude) < 0.01 &&
+        abs(longitude - other.longitude) < 0.01;
+}
+
+//CLUSTERSSSSSSSSS
+Cluster::Cluster(int id)
+    : storeCount(0), capacity(100), clusterID(id), centroid(0, 0, 0, id) {
+    stores = new Store * [capacity];
+}
+
+Cluster::Cluster(const Cluster& other)
+    : storeCount(other.storeCount), capacity(other.capacity), clusterID(other.clusterID), centroid(other.centroid) {
+    stores = new Store * [capacity];
+    for (int i = 0; i < storeCount; i++) {
+        stores[i] = other.stores[i];
+    }
+}
+
+Cluster::~Cluster() {
+    if (stores != nullptr) {
+        delete[] stores;
+        stores = nullptr;
+    }
+}
+
+Cluster& Cluster::operator=(const Cluster& other) {
+    if (this != &other) {
+        if (stores != nullptr) {
+            delete[] stores;
+        }
+        storeCount = other.storeCount;
+        capacity = other.capacity;
+        clusterID = other.clusterID;
+        centroid = other.centroid;
+
+        stores = new Store * [capacity];
+        for (int i = 0; i < storeCount; i++) {
+            stores[i] = other.stores[i];
+        }
+    }
+    return *this;
+}
+
+void Cluster::addStore(Store* store) {
+    if (storeCount >= capacity) {
+        capacity *= 2;
+        Store** newArray = new Store * [capacity];
+        for (int i = 0; i < storeCount; i++) {
+            newArray[i] = stores[i];
+        }
+        delete[] stores;
+        stores = newArray;
+    }
+    stores[storeCount++] = store;
+}
+
+Store* Cluster::getStore(int index) const {
+    if (index >= 0 && index < storeCount) return stores[index];
+    return nullptr;
+}
+
+int Cluster::getStoreCount() const { return storeCount; }
+int Cluster::getClusterID() const { return clusterID; }
+Centroid Cluster::getCentroid() const { return centroid; }
+
+void Cluster::updateCentroid() {
+    if (storeCount == 0) return;
+
+    double avgLat = 0, avgLon = 0, avgScore = 0;
+    for (int i = 0; i < storeCount; i++) {
+        Coordinates loc = stores[i]->getLocation();
+        avgLat += loc.getLatitude();
+        avgLon += loc.getLongitude();
+        avgScore += stores[i]->getSales().getCompositeScore();
+    }
+
+    avgLat /= storeCount;
+    avgLon /= storeCount;
+    avgScore /= storeCount;
+
+    centroid.setFeatures(avgLat, avgLon, avgScore);
+}
+
+double Cluster::getTotalRevenue() const {
+    double total = 0;
+    for (int i = 0; i < storeCount; i++) {
+        total += stores[i]->getSales().getTotal();
+    }
+    return total;
+}
+
+double Cluster::getTotalProfit() const {
+    double total = 0;
+    for (int i = 0; i < storeCount; i++) {
+        total += stores[i]->CalculateProfit();
+    }
+    return total;
+}
+
+Cluster Cluster::operator+(const Cluster& other) {
+    Cluster merged(clusterID);
+    for (int i = 0; i < storeCount; i++) {
+        merged.addStore(stores[i]);
+    }
+    for (int i = 0; i < other.storeCount; i++) {
+        merged.addStore(other.stores[i]);
+    }
+    merged.updateCentroid();
+    return merged;
+}
+
+ostream& operator<<(ostream& os, const Cluster& c) {
+    os << c.clusterID << "          " << fixed << setprecision(2)
+        << c.centroid.getLatitude() << "          "
+        << c.centroid.getLongitude() << "          "
+        << c.storeCount << "          "
+        << c.getTotalRevenue() << "          "
+        << c.getTotalProfit() << "\n";
+    return os;
+}
+
+//Report
+Report::Report() : topCount(0), bottomCount(0) {
+    topStores = new Store * [10];
+    bottomStores = new Store * [5];
+}
+
+Report::~Report() {
+    if (topStores != nullptr) delete[] topStores;
+    if (bottomStores != nullptr) delete[] bottomStores;
+}
+
+void Report::generateReport(Store** storeArray, int storeCount) {
+    Store** sorted = new Store * [storeCount];
+    for (int i = 0; i < storeCount; i++) {
+        sorted[i] = storeArray[i];
+    }
+
+    for (int i = 0; i < storeCount - 1; i++) {
+        for (int j = 0; j < storeCount - i - 1; j++) {
+            if (sorted[j]->getSales() < sorted[j + 1]->getSales()) {
+                Store* temp = sorted[j];
+                sorted[j] = sorted[j + 1];
+                sorted[j + 1] = temp;
+            }
+        }
+    }
+
+    topCount = (storeCount < 10) ? storeCount : 10;
+    for (int i = 0; i < topCount; i++) {
+        topStores[i] = sorted[i];
+    }
+
+    bottomCount = (storeCount < 5) ? storeCount : 5;
+    for (int i = 0; i < bottomCount; i++) {
+        bottomStores[i] = sorted[storeCount - 1 - i];
+    }
+
+    delete[] sorted;
+}
+
+Store* Report::getTopStore(int index) const {
+    if (index >= 0 && index < topCount) return topStores[index];
+    return nullptr;
+}
+
+Store* Report::getBottomStore(int index) const {
+    if (index >= 0 && index < bottomCount) return bottomStores[index];
+    return nullptr;
+}
+
+int Report::getTopCount() const { return topCount; }
+int Report::getBottomCount() const { return bottomCount; }
+
+ostream& operator<<(ostream& os, const Report& r) {
+    os << "\n=== TOP 10 ===\n";
+    for (int i = 0; i < r.topCount; i++) {
+        os << (i + 1) << ". " << r.topStores[i]->getStoreName() << "\n";
+    }
+
+    os << "\n=== BOTTOM 5 ===\n";
+    for (int i = 0; i < r.bottomCount; i++) {
+        os << (i + 1) << ". " << r.bottomStores[i]->getStoreName() << "\n";
+    }
+    return os;
+}
+
+//Helper functions
+double generateRandomDouble(double min, double max) {
+    return min + (max - min) * ((double)rand() / RAND_MAX);
+}
+
+int generateRandomInt(int min, int max) {
+    return min + (rand() % (max - min + 1));
+}
+
+string generateRandomStoreName() {
+    string prefixes[] = { "Metro", "Urban", "City", "Prime", "Valley", "Central", "District", "Peak", "Grand", "Elite" };
+    string suffixes[] = { "Mall", "Square", "Plaza", "Center", "Hub", "Market", "Store", "Bazaar" };
+
+    string name = prefixes[rand() % 10] + " " + suffixes[rand() % 8];
+    return name;
+}
+
+string generateRandomManagerName() {
+    string names[] = { "Abiha", "Ishmal", "Khadija", "OG Khadija", "Arsalan", "Cheema", "Faiq", "Talha" };
+    return names[rand() % 8];
+}
+
+Store* loadAllStores(const string& filename, int& storeCount) {
+    ifstream file(filename);
+
+    if (!file.is_open()) {
+        cout << "File not found.\n";
+        storeCount = 0;
+        return nullptr;
+    }
+
+    file >> storeCount;
+    file.ignore();
+
+    if (storeCount <= 0) {
+        file.close();
+        return nullptr;
+    }
+
+    Store* stores = new Store[storeCount];
+
+    for (int i = 0; i < storeCount; i++) {
+        stores[i].loadFromFile(file);
+    }
+
+    file.close();
+    cout << "File written to: urbanease_data.txt\n\n";
+
+    return stores;
+}
+
+void saveAllStores(Store** storeArray, int storeCount, const string& filename) {
+    ofstream file(filename);
+
+    if (!file.is_open()) {
+        cout << "Failed to create file. :\\ \n";
+        return;
+    }
+
+    file << storeCount << "\n";
+
+    for (int i = 0; i < storeCount; i++) {
+        storeArray[i]->saveToFile(file);
+    }
+
+    file.close();
+    cout << "SUCCESS: " << storeCount << " stores generated.\n";
+    cout << "File written to: urbanease_data.txt\n\n";
+}
+
+Cluster* performClustering(Store** storeArray, int storeCount, int k) {
+    Centroid* centroids = new Centroid[k];
+
+    for (int i = 0; i < k; i++) {
+        int idx = rand() % storeCount;
+        Coordinates loc = storeArray[idx]->getLocation();
+        centroids[i] = Centroid(loc.getLatitude(), loc.getLongitude(), 0, i);
+    }
+
+    Cluster* clusters = new Cluster[k];
+    for (int i = 0; i < k; i++) {
+        clusters[i] = Cluster(i);
+    }
+
+    for (int iter = 0; iter < 10; iter++) {
+        for (int i = 0; i < k; i++) {
+            clusters[i] = Cluster(i);
+        }
+
+        for (int i = 0; i < storeCount; i++) {
+            double minDist = 1e9;
+            int nearest = 0;
+
+            for (int j = 0; j < k; j++) {
+                double dist = centroids[j].distanceToStore(*storeArray[i]);
+                if (dist < minDist) {
+                    minDist = dist;
+                    nearest = j;
+                }
+            }
+
+            clusters[nearest].addStore(storeArray[i]);
+        }
+
+        for (int i = 0; i < k; i++) {
+            clusters[i].updateCentroid();
+            centroids[i] = clusters[i].getCentroid();
+        }
+    }
+
+    delete[] centroids;
+    return clusters;
+}
+
+void displayClusterSummary(Cluster* clusters, int k) {
+    cout << "\033[1;33m";
+    cout << endl;
+    cout << "                                     CLUSTER PERFORMANCE RANKING\033[0m\n";
+    cout << "---------------------------------------------------------------------------------------------\n";
+    cout << "Cluster    Latitude       Longitude      Stores      Sales (PKR)           Profit (PKR)\n";
+    cout << "---------------------------------------------------------------------------------------------\n";
+
+    for (int i = 0; i < k; i++) {
+        cout << clusters[i];
+    }
+}
+
+void displayStoreDetails(Store* store) {
+    cout << "\033[1;34m";
+    cout << endl;
+	cout << "                                   +------------------------------+\n";
+    cout << "                                   |           STORE REPORT       |\n";
+    cout << "                                   +------------------------------+\n";
+    cout << "\033[0m";
+    cout << "Name: " << store->getStoreName() << "\n";
+    cout << "Total Sales: " << fixed << setprecision(2) << store->getSales().getTotal() << "\n";
+    cout << "Total Profit: " << store->CalculateProfit() << "\n";
+    cout << "Avg Growth: " << store->getSales().getGrowthRate() << " %\n";
+    cout << "\nForecast for Month 25:\n";
+    cout << "Expected Sales: " << store->getForecast().getPredictedSales() << "\n";
+    cout << "Confidence: " << store->getForecast().getConfidenceLevel() << "%\n";
+
+    if (store->getForecast().hasWarning()) {
+        cout << "Risk Alert: Yes, decline predicted, oh nooooo\n";
+    }
+    else {
+        cout << "Risk Alert: No, stable performance, LETS GO!!!!\n";
+    }
+
+    cout << "\nManagement Info: Name: " << store->getManager().getName()
+        << ", ID: " << store->getManager().getID()
+        << ", Bonus: PKR " << store->getManager().getBonus() << "\n";
+}
+
+int displayStartupMenu() {
+    cout << "\n=== URBANEASE ===\n";
+    cout << "1. Load Data\n";
+    cout << "2. Generate Data\n";
+    cout << "Enter (1 or 2): ";
+
+    int choice;
+    cin >> choice;
+    cin.ignore();
+    return choice;
+}
+
+//no visual report im sorry guys 
