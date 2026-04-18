@@ -1,0 +1,118 @@
+#include"Header.h"
+
+int main() {
+    srand((unsigned)time(0));
+
+    Store* stores = nullptr;
+    int storeCount = 0;
+    const string dataFile = "urbanease_data.txt";
+    const int MIN_STORES = 100;
+    const int MAX_STORES = 500;
+
+
+    cout << "\033[1;34m"; 
+    cout << "\n\n";
+    cout << "                                      +================================+\n";
+    cout << "                                      |        URBANEASE SYSTEM        |\n";
+    cout << "                                      +================================+\n";
+
+    cout << "\033[0m"; 
+
+    int choice = displayStartupMenu();
+
+    if (choice == 1) {
+        cout << "\nLoading existing data...\n";
+        stores = loadAllStores(dataFile, storeCount);
+
+        if (stores == nullptr) {
+            cout << "No saved data found. Generating new data instead...\n";
+            choice = 2;
+        }
+    }
+
+    if (choice == 2) {
+        cout << "\nGenerating fresh store data...\n";
+        cout << "Enter number of stores to generate (min " << MIN_STORES << ", max " << MAX_STORES << "): ";
+        cin >> storeCount;
+        cin.ignore();
+
+        while (storeCount < MIN_STORES || storeCount > MAX_STORES) {
+            cout << "Invalid input. Enter between " << MIN_STORES << " and " << MAX_STORES << ": ";
+            cin >> storeCount;
+            cin.ignore();
+        }
+
+        stores = new Store[storeCount];
+
+        for (int i = 0; i < storeCount; i++) {
+            Coordinates loc(generateRandomDouble(61.5, 77.2), generateRandomDouble(24.7, 37.1));
+            Store s(loc, generateRandomStoreName(), 1000 + i, generateRandomInt(3, 5));
+
+            Manager mgr(generateRandomManagerName(), 100 + i, generateRandomInt(5000, 20000));
+            s.setManager(mgr);
+
+            int staffNeeded = generateRandomInt(3, 5);
+            for (int j = 0; j < staffNeeded; j++) {
+                Employee emp("Staff", 2000 + i * 10 + j);
+                s.addEmployee(emp);
+            }
+
+            s.generateRandomData();
+            stores[i] = s;
+        }
+
+        Store** tempArray = new Store * [storeCount];
+        for (int i = 0; i < storeCount; i++) {
+            tempArray[i] = &stores[i];
+        }
+        saveAllStores(tempArray, storeCount, dataFile);
+        delete[] tempArray;
+    }
+
+    if (stores == nullptr || storeCount == 0) {
+        cout << "Error: No data available.\n";
+        return 1;
+    }
+
+    // Create store pointer array
+    Store** storePtr = new Store * [storeCount];
+    for (int i = 0; i < storeCount; i++) {
+        storePtr[i] = &stores[i];
+    }
+
+    // CLUSTERING
+    int k = 5;
+    Cluster* clusters = performClustering(storePtr, storeCount, k);
+    displayClusterSummary(clusters, k);
+
+    // STORE DETAILS
+    cout << "\nEnter Store ID to view details (" << 1000 << "-" << (999 + storeCount) << "): ";
+    int storeID;
+    cin >> storeID;
+
+    cout << "\033[1;34m";
+    cout << "                                           VIEWING STORE:" <<storeID;
+
+    cout << "\033[0m";
+    Store* selectedStore = nullptr;
+    for (int i = 0; i < storeCount; i++) {
+        if (storePtr[i]->getStoreID() == storeID) {
+            selectedStore = storePtr[i];
+            break;
+        }
+    }
+
+    if (selectedStore != nullptr) {
+        displayStoreDetails(selectedStore);
+    }
+    else {
+        cout << "Store not found.\n";
+    }
+
+    delete[] stores;
+    delete[] clusters;
+    delete[] storePtr;
+
+    cout << "\n\nProgram ended. Byeee!!!\n";
+    return 0;
+}
